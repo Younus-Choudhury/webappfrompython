@@ -1,54 +1,178 @@
-# Import necessary libraries
-import pandas as pd
-import joblib
-from flask import Flask, request, jsonify
-import os
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Premium Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        .message-box {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+        }
+        .message-box.error {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
 
-# Create a Flask web server
-app = Flask(__name__)
+    <!-- Custom Message Box for displaying errors or messages -->
+    <div id="messageBox" class="message-box"></div>
 
-# Construct the full path to the model file using the script's directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(script_dir, 'insurance_rf_model.pkl')
+    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Insurance Premium Predictor</h1>
+        <p class="text-gray-600 mb-8 text-center">
+            Enter your details below to get a predicted insurance premium from your model.
+        </p>
 
-# Load the trained model at startup to avoid reloading it on every request
-try:
-    model = joblib.load(model_path)
-    print(f"Model loaded successfully from: {model_path}")
-except FileNotFoundError:
-    print(f"Error: 'insurance_rf_model.pkl' not found at '{model_path}'. Make sure the model file is in the same directory.")
-    model = None
-except Exception as e:
-    print(f"An unexpected error occurred while loading the model: {e}")
-    model = None
+        <div id="loadingIndicator" class="hidden text-center text-blue-500 font-semibold mb-4">
+            Calculating prediction...
+        </div>
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    """
-    Handles POST requests to the /predict endpoint.
-    It expects a JSON payload with user data, uses the loaded model to predict the premium,
-    and returns the prediction as a JSON response.
-    """
-    if not model:
-        return jsonify({'error': 'Model not loaded.'}), 500
+        <form id="predictionForm" class="space-y-6">
+            <!-- Age Input -->
+            <div>
+                <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                <input type="number" name="age" id="age" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 30" required>
+            </div>
 
-    # Get the JSON data from the request
-    data = request.get_json()
+            <!-- Sex Input -->
+            <div>
+                <label for="sex" class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+                <select name="sex" id="sex" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
 
-    # Ensure all necessary fields are present
-    required_fields = ['age', 'sex', 'bmi', 'children', 'smoker', 'region']
-    if not all(field in data for field in required_fields):
-        return jsonify({'error': 'Missing required fields in request.'}), 400
+            <!-- BMI Input -->
+            <div>
+                <label for="bmi" class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
+                <input type="number" name="bmi" id="bmi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 25.5" required>
+            </div>
 
-    try:
-        # Create a pandas DataFrame from the input data to match the training data format
-        user_df = pd.DataFrame([data])
-        
-        # Make a prediction using the loaded model
-        prediction = model.predict(user_df)[0]
-        
-        # Return the prediction as a JSON response
-        return jsonify({'premium': round(prediction, 2)})
-    except Exception as e:
-        # Handle any potential errors during prediction
-        return jsonify({'error': str(e)}), 500
+            <!-- Children Input -->
+            <div>
+                <label for="children" class="block text-sm font-medium text-gray-700 mb-1">Number of Children</label>
+                <input type="number" name="children" id="children" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 2" required>
+            </div>
+
+            <!-- Smoker Input -->
+            <div>
+                <label for="smoker" class="block text-sm font-medium text-gray-700 mb-1">Smoker?</label>
+                <select name="smoker" id="smoker" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select>
+            </div>
+
+            <!-- Region Input -->
+            <div>
+                <label for="region" class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                <select name="region" id="region" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="northeast">Northeast</option>
+                    <option value="northwest">Northwest</option>
+                    <option value="southeast">Southeast</option>
+                    <option value="southwest">Southwest</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 shadow-md hover:shadow-lg">
+                Get Prediction
+            </button>
+        </form>
+
+        <div id="resultContainer" class="hidden mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+            <h2 class="text-lg font-semibold text-blue-800 mb-2">Predicted Premium</h2>
+            <p id="predictionResult" class="text-2xl font-bold text-blue-600">
+                <!-- Result will be displayed here -->
+            </p>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * This function displays a temporary message box.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message (e.g., 'error', 'success').
+         */
+        function showMessage(message, type = 'info') {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type}`;
+            messageBox.style.display = 'block';
+
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 5000);
+        }
+
+        document.getElementById('predictionForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultContainer = document.getElementById('resultContainer');
+            const predictionResult = document.getElementById('predictionResult');
+
+            loadingIndicator.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            try {
+                // Collect form data
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                // Construct the API URL dynamically
+                // This will work correctly on your Vercel deployment
+                const apiURL = `${window.location.origin}/api/predict`;
+                
+                // Make the POST request to the Python API
+                const response = await fetch(apiURL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                // Parse the JSON response
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Prediction failed.');
+                }
+                
+                // Display the prediction
+                predictionResult.textContent = `$${result.premium}`;
+                resultContainer.classList.remove('hidden');
+
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+                console.error('API call failed:', error);
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
