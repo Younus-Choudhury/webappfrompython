@@ -3,13 +3,23 @@ import pandas as pd
 import joblib
 from flask import Flask, request, jsonify
 import os
+import sys
 
 # Create a Flask web server
 app = Flask(__name__)
 
+# --- New Logic to find the model file ---
+# Get the directory of the current script
+if getattr(sys, 'frozen', False):
+    # If the application is a bundle, the path is different
+    script_dir = os.path.dirname(sys.executable)
+else:
+    # Get the directory of the current script file
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
 # Construct the full path to the model file
-# This is a more robust way to handle file paths in different environments
-model_path = os.path.join(os.getcwd(), 'insurance_rf_model.pkl')
+model_path = os.path.join(script_dir, 'insurance_rf_model.pkl')
+# --- End of new logic ---
 
 # Load the trained model at startup to avoid reloading it on every request
 try:
