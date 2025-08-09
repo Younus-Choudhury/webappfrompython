@@ -1,0 +1,139 @@
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance Premium Predictor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">Insurance Premium Predictor</h1>
+        <p class="text-gray-600 mb-8 text-center">
+            Enter your details below to get a predicted insurance premium.
+        </p>
+
+        <form id="predictionForm" class="space-y-6">
+            <div>
+                <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                <input type="number" id="age" name="age" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 30" required>
+            </div>
+
+            <div>
+                <label for="sex" class="block text-sm font-medium text-gray-700 mb-1">Sex</label>
+                <select id="sex" name="sex" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="bmi" class="block text-sm font-medium text-gray-700 mb-1">BMI</label>
+                <input type="number" id="bmi" name="bmi" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 25.5" required>
+            </div>
+
+            <div>
+                <label for="children" class="block text-sm font-medium text-gray-700 mb-1">Number of Children</label>
+                <input type="number" id="children" name="children" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200" placeholder="e.g., 2" required>
+            </div>
+
+            <div>
+                <label for="smoker" class="block text-sm font-medium text-gray-700 mb-1">Smoker?</label>
+                <select id="smoker" name="smoker" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="region" class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                <select id="region" name="region" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    <option value="northeast">Northeast</option>
+                    <option value="northwest">Northwest</option>
+                    <option value="southeast">Southeast</option>
+                    <option value="southwest">Southwest</option>
+                </select>
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition duration-300 shadow-md hover:shadow-lg">
+                Get Prediction
+            </button>
+        </form>
+
+        <div id="loadingIndicator" class="hidden text-center text-blue-500 font-semibold mt-6">
+            Calculating prediction...
+        </div>
+
+        <div id="resultContainer" class="hidden mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+            <h2 class="text-lg font-semibold text-blue-800 mb-2">Predicted Premium</h2>
+            <p id="predictionResult" class="text-2xl font-bold text-blue-600">
+                <!-- Result will be displayed here -->
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultContainer = document.getElementById('resultContainer');
+            const predictionResult = document.getElementById('predictionResult');
+
+            // Show loading indicator and hide previous result
+            loadingIndicator.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+            
+            // Collect form data
+            const formData = {
+                age: parseInt(form.age.value),
+                sex: form.sex.value,
+                bmi: parseFloat(form.bmi.value),
+                children: parseInt(form.children.value),
+                smoker: form.smoker.value,
+                region: form.region.value,
+            };
+
+            // This is where you will put the URL of your Vercel deployment
+            // It will look something like: https://your-app-name.vercel.app/predict
+            const apiUrl = '/api/predict';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Display the prediction result
+                predictionResult.textContent = `$${data.premium}`;
+                resultContainer.classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                predictionResult.textContent = `Error: ${error.message}`;
+                resultContainer.classList.remove('hidden');
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        });
+    </script>
+
+</body>
+</html>
