@@ -35,4 +35,3 @@ def predict():
     except Exception as e:
         # Handle Errors: If something goes wrong, we send an error message instead of crashing.
         return jsonify({'error': str(e)}), 500
-
